@@ -61,7 +61,7 @@ class FeatureContext implements Context
      */
     public function iExpectAtLeastResult($arg1)
     {
-        $data = json_decode($this->response->getBody(), true);
+        $data = $this->getBodyAsJson();
         if ($data['total_count'] < $arg1) {
             throw new Exception("We expected at least $arg1 results but found: " . $data['total_count']);
         }
@@ -72,17 +72,15 @@ class FeatureContext implements Context
      */
     public function iAmAnAuthenticatedUser()
     {
-        $client = new GuzzleHttp\Client(
+        $this->client = new GuzzleHttp\Client(
             [
                 'base_uri' => 'https://api.github.com',
                 'auth' => [$this->username, $this->password]
             ]
         );
-        $response = $client->get('/');
+        $this->response = $this->client->get('/');
 
-        if (200 != $response->getStatusCode()) {
-            throw new Exception("Authentication didn't work!");
-        }
+        $this->iExpectAResponseCode(200);
     }
 
     /**
@@ -90,14 +88,29 @@ class FeatureContext implements Context
      */
     public function iRequestAListOfMyRepositories()
     {
-        throw new Exception();
+        $this->response = $this->client->get('/user/repos');
+
+        $this->iExpectAResponseCode(200);
     }
 
     /**
-     * @Then The results should include a repostory name :arg1
+     * @Then The results should include a repository name :arg1
      */
-    public function theResultsShouldIncludeARepostoryName($arg1)
+    public function theResultsShouldIncludeARepositoryName($arg1)
     {
-        throw new Exception();
+        $repositories = $this->getBodyAsJson();
+
+        foreach($repositories as $repository) {
+            if ($repository['name'] == $arg1) {
+                return true;
+            }
+        }
+
+        throw new Exception("Expected to find a repository named '$arg1' but didn't.");
+    }
+
+    protected function getBodyAsJson()
+    {
+        return json_decode($this->response->getBody(), true);
     }
 }
