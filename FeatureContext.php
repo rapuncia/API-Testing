@@ -109,6 +109,18 @@ class FeatureContext implements Context
         throw new Exception("Expected to find a repository named '$arg1' but didn't.");
     }
 
+    /**
+     * @When I create the :arg1 repository
+     */
+    public function iCreateTheRepository($arg1)
+    {
+        $parameters = json_encode(['name' => $arg1]);
+
+        $this->client->post('/user/repos', ['body' => $parameters]);
+
+        $this->iExpectAResponseCode(200);
+    }
+
     protected function getBodyAsJson()
     {
         return json_decode($this->response->getBody(), true);
