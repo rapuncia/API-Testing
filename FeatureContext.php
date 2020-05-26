@@ -33,10 +33,10 @@ class FeatureContext implements Context
     /**
      * @When I search for :arg1
      */
-    public function iSearchForBehat()
+    public function iSearchFor($arg1)
     {
         $client = new GuzzleHttp\Client(['base_uri' => 'https://api.github.com']);
-        $this->response = $client->get('/search/repositories?q=behat');
+        $this->response = $client->get('/search/repositories?q=' . $arg1);
     }
 
     /**
