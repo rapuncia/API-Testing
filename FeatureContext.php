@@ -74,8 +74,7 @@ class FeatureContext implements Context
     {
         $this->client = new GuzzleHttp\Client(
             [
-                'base_uri' => 'https://api.github.com',
-                'auth' => [$this->username, $this->password]
+                'base_uri' => 'https://api.github.com', 'auth' => [$this->username, $this->password]
             ]
         );
         $this->response = $this->client->get('/');
@@ -94,9 +93,9 @@ class FeatureContext implements Context
     }
 
     /**
-     * @Then The results should include a repository name :arg1
+     * @Then The results should include a repository named :arg1
      */
-    public function theResultsShouldIncludeARepositoryName($arg1)
+    public function theResultsShouldIncludeARepositoryNamed($arg1)
     {
         $repositories = $this->getBodyAsJson();
 
@@ -106,7 +105,7 @@ class FeatureContext implements Context
             }
         }
 
-        throw new Exception("Expected to find a repository named '$arg1' but didn't.");
+        throw new Exception("Expected to find a repository called '$arg1' but it doesn't exist.");
     }
 
     /**
@@ -119,6 +118,56 @@ class FeatureContext implements Context
         $this->client->post('/user/repos', ['body' => $parameters]);
 
         $this->iExpectAResponseCode(200);
+    }
+
+    /**
+     * @Given I have a repository called :arg1
+     */
+    public function iHaveARepositoryCalled($arg1)
+    {
+        $this->iRequestAListOfMyRepositories();
+        $this->theResultsShouldIncludeARepositoryNamed($arg1);
+    }
+
+    /**
+     * @When I watch the :arg1 repository
+     */
+    public function iWatchTheRepository($arg1)
+    {
+        $watch_url = '/repos/' . $this->username . '/' . $arg1 . '/subscription';
+        $parameters = json_encode(['subscribed' => 'true']);
+
+        $this->client->put($watch_url, ['body' => $parameters]);
+    }
+
+    /**
+     * @Then The :arg1 repository will list me as a watcher
+     */
+    public function theRepositoryWillListMeAsAWatcher($arg1)
+    {
+        $watch_url = '/repos/' . $this->username . '/' . $arg1 . '/subscribers';
+        $this->response = $this->client->get($watch_url);
+
+        $subscribers = $this->getBodyAsJson();
+
+        foreach($subscribers as $subscriber) {
+            if ($subscriber['login'] == $this->username) {
+                return true;
+            }
+        }
+
+        throw new Exception("Did not find '{$this->username}' as a watcher as expected.");
+    }
+
+    /**
+     * @Then I delete the repository called :arg1
+     */
+    public function iDeleteTheRepositoryCalled($arg1)
+    {
+        $delete = '/repos/' . $this->username . '/' . $arg1;
+        $this->response = $this->client->delete($delete);
+
+        $this->iExpectAResponseCode(204);
     }
 
     protected function getBodyAsJson()
